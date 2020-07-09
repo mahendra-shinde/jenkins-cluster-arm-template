@@ -9,7 +9,7 @@
                 "description": "Admin Username for Jenkins Master"
             }
         },
-        "slave-username": {
+        "node-username": {
             "type": "string",
             "defaultValue": "mahendra",
             "metadata": {
@@ -23,7 +23,7 @@
                 "description": "Admin Password for Jenkins Master VM"
             }
         },
-        "slave-password": {
+        "node-password": {
             "type": "securestring",
             "defaultValue": "pass@12345",
             "metadata": {
@@ -36,18 +36,24 @@
             "metadata": {
                 "description": "DNS Prefix for Jenkins Master"
             }
+        },
+        "storageName":{
+            "type": "string",
+            "defaultValue": "jenkins123",
+            "metadata":{
+                "description": "storage account prefix"
+            }
         }
     },
     
     "functions": [],
     "variables": {
         "NetIpRange": "10.0.0.0/16",
-        "SubnetRange": "10.0.1.0/24",
-        "storageName":"jenkins123"
+        "SubnetRange": "10.0.1.0/24"
     },
     "resources": [
         {
-            "name": "[toLower(variables('storageName'))]",
+            "name": "[toLower(parameters('storageName'))]",
             "type": "Microsoft.Storage/storageAccounts",
             "apiVersion": "2019-06-01",
             "location": "[resourceGroup().location]",
@@ -92,6 +98,20 @@
                             "destinationAddressPrefix": "*",
                             "access": "Allow",
                             "priority": 100,
+                            "direction": "Inbound"
+                        }
+                    },
+                      {
+                        "name": "nsgRule2",
+                        "properties": {
+                            "description": "HTTP Access to Master",
+                            "protocol": "Tcp",
+                            "sourcePortRange": "*",
+                            "destinationPortRange": "8080",
+                            "sourceAddressPrefix": "*",
+                            "destinationAddressPrefix": "*",
+                            "access": "Allow",
+                            "priority": 200,
                             "direction": "Inbound"
                         }
                     }
@@ -201,13 +221,13 @@
                 "diagnosticsProfile": {
                     "bootDiagnostics": {
                         "enabled": true,
-                        "storageUri": "[reference(resourceId('Microsoft.Storage/storageAccounts/', toLower(variables('storageName')))).primaryEndpoints.blob]"
+                        "storageUri": "[reference(resourceId('Microsoft.Storage/storageAccounts/', toLower(parameters('storageName')))).primaryEndpoints.blob]"
                     }
                 }
             }
         },
         {
-            "name": "slave-1-PublicIP",
+            "name": "node-1-PublicIP",
             "type": "Microsoft.Network/publicIPAddresses",
             "apiVersion": "2019-11-01",
             "location": "[resourceGroup().location]",
@@ -217,12 +237,12 @@
             "properties": {
                 "publicIPAllocationMethod": "Dynamic",
                 "dnsSettings": {
-                    "domainNameLabel": "[toLower('slave-1-jenkins-mx')]"
+                    "domainNameLabel": "[toLower('node-1-jenkins-mx')]"
                 }
             }
         },
         {
-            "name": "slave-1-nsg",
+            "name": "node-1-nsg",
             "type": "Microsoft.Network/networkSecurityGroups",
             "apiVersion": "2018-08-01",
             "location": "[resourceGroup().location]",
@@ -246,18 +266,21 @@
             }
         },
         {
-            "name": "slave-1-NetworkInterface",
+            "name": "node-1-NetworkInterface",
             "type": "Microsoft.Network/networkInterfaces",
             "apiVersion": "2019-11-01",
             "location": "[resourceGroup().location]",
             "dependsOn": [
-                "[resourceId('Microsoft.Network/publicIPAddresses', 'slave-1-PublicIP')]",
+                "[resourceId('Microsoft.Network/publicIPAddresses', 'node-1-PublicIP')]",
                 "[resourceId('Microsoft.Network/virtualNetworks', 'jenkins-cluster-VirtualNetwork')]"
             ],
             "tags": {
-                "displayName": "slave-1-NetworkInterface"
+                "displayName": "node-1-NetworkInterface"
             },
             "properties": {
+                "networkSecurityGroup": {
+                    "id": "[resourceId('Microsoft.Network/networkSecurityGroups','node-1-nsg')]"
+                } ,
                 "ipConfigurations": [
                     {
                         "name": "ipConfig1",
@@ -265,7 +288,7 @@
                             "privateIPAllocationMethod": "Static",
                             "privateIPAddress": "10.0.1.11",
                             "publicIPAddress": {
-                                "id": "[resourceId('Microsoft.Network/publicIPAddresses', 'slave-1-PublicIP')]"
+                                "id": "[resourceId('Microsoft.Network/publicIPAddresses', 'node-1-PublicIP')]"
                             },
                             "subnet": {
                                 "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', 'jenkins-cluster-VirtualNetwork', 'Jenkins-VirtualNetwork-Subnet')]"
@@ -276,24 +299,24 @@
             }
         },
         {
-            "name": "slave-1",
+            "name": "node-1",
             "type": "Microsoft.Compute/virtualMachines",
             "apiVersion": "2019-07-01",
             "location": "[resourceGroup().location]",
             "dependsOn": [
-                "[resourceId('Microsoft.Network/networkInterfaces', 'slave-1-NetworkInterface')]"
+                "[resourceId('Microsoft.Network/networkInterfaces', 'node-1-NetworkInterface')]"
             ],
             "tags": {
-                "displayName": "slave-1"
+                "displayName": "node-1"
             },
             "properties": {
                 "hardwareProfile": {
                     "vmSize": "Standard_A2_v2"
                 },
                 "osProfile": {
-                    "computerName": "slave-1",
-                    "adminUsername": "[parameters('slave-username')]",
-                    "adminPassword": "[parameters('slave-password')]"
+                    "computerName": "node-1",
+                    "adminUsername": "[parameters('node-username')]",
+                    "adminPassword": "[parameters('node-password')]"
                 },
                 "storageProfile": {
                     "imageReference": {
@@ -303,7 +326,7 @@
                         "version": "latest"
                     },
                     "osDisk": {
-                        "name": "slave-1-OSDisk",
+                        "name": "node-1-OSDisk",
                         "caching": "ReadWrite",
                         "createOption": "FromImage"
                     }
@@ -311,20 +334,20 @@
                 "networkProfile": {
                     "networkInterfaces": [
                         {
-                            "id": "[resourceId('Microsoft.Network/networkInterfaces', 'slave-1-NetworkInterface')]"
+                            "id": "[resourceId('Microsoft.Network/networkInterfaces', 'node-1-NetworkInterface')]"
                         }
                     ]
                 },
                 "diagnosticsProfile": {
                     "bootDiagnostics": {
                         "enabled": true,
-                        "storageUri": "[reference(resourceId('Microsoft.Storage/storageAccounts/', toLower(variables('storageName')))).primaryEndpoints.blob]"
+                        "storageUri": "[reference(resourceId('Microsoft.Storage/storageAccounts/', toLower(parameters('storageName')))).primaryEndpoints.blob]"
                     }
                 }
             }
         },
         {
-            "name": "win-slave-PublicIP",
+            "name": "node-2-PublicIP",
             "type": "Microsoft.Network/publicIPAddresses",
             "apiVersion": "2019-11-01",
             "location": "[resourceGroup().location]",
@@ -334,12 +357,12 @@
             "properties": {
                 "publicIPAllocationMethod": "Dynamic",
                 "dnsSettings": {
-                    "domainNameLabel": "[toLower('win-slave')]"
+                    "domainNameLabel": "[toLower('node-2')]"
                 }
             }
         },
         {
-            "name": "win-slave-nsg",
+            "name": "node-2-nsg",
             "type": "Microsoft.Network/networkSecurityGroups",
             "apiVersion": "2018-08-01",
             "location": "[resourceGroup().location]",
@@ -363,18 +386,21 @@
             }
         },
         {
-            "name": "win-slave-NetworkInterface",
+            "name": "node-2-NetworkInterface",
             "type": "Microsoft.Network/networkInterfaces",
             "apiVersion": "2019-11-01",
             "location": "[resourceGroup().location]",
             "dependsOn": [
-                "[resourceId('Microsoft.Network/publicIPAddresses', 'win-slave-PublicIP')]",
+                "[resourceId('Microsoft.Network/publicIPAddresses', 'node-2-PublicIP')]",
                 "[resourceId('Microsoft.Network/virtualNetworks', 'jenkins-cluster-VirtualNetwork')]"
             ],
             "tags": {
-                "displayName": "win-slave Network Interface"
+                "displayName": "node-2 Network Interface"
             },
             "properties": {
+                "networkSecurityGroup": {
+                    "id": "[resourceId('Microsoft.Network/networkSecurityGroups','node-2-nsg')]"
+                } ,
                 "ipConfigurations": [
                     {
                         "name": "ipConfig1",
@@ -382,7 +408,7 @@
                             "privateIPAllocationMethod": "Static",
                             "privateIPAddress": "10.0.1.12",
                             "publicIPAddress": {
-                                "id": "[resourceId('Microsoft.Network/publicIPAddresses', 'win-slave-PublicIP')]"
+                                "id": "[resourceId('Microsoft.Network/publicIPAddresses', 'node-2-PublicIP')]"
                             },
                             "subnet": {
                                 "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', 'jenkins-cluster-VirtualNetwork', 'Jenkins-VirtualNetwork-Subnet')]"
@@ -393,25 +419,25 @@
             }
         },
         {
-            "name": "win-slave",
+            "name": "node-2",
             "type": "Microsoft.Compute/virtualMachines",
             "apiVersion": "2019-07-01",
             "location": "[resourceGroup().location]",
             "dependsOn": [
-                "[resourceId('Microsoft.Storage/storageAccounts', toLower(variables('storageName')))]",
-                "[resourceId('Microsoft.Network/networkInterfaces', 'win-slave-NetworkInterface')]"
+                "[resourceId('Microsoft.Storage/storageAccounts', toLower(parameters('storageName')))]",
+                "[resourceId('Microsoft.Network/networkInterfaces', 'node-2-NetworkInterface')]"
             ],
             "tags": {
-                "displayName": "win-slave"
+                "displayName": "node-2"
             },
             "properties": {
                 "hardwareProfile": {
                     "vmSize": "Standard_A2_v2"
                 },
                 "osProfile": {
-                    "computerName": "slave-2",
-                    "adminUsername": "[parameters('slave-username')]",
-                    "adminPassword": "[parameters('slave-password')]"
+                    "computerName": "node-2",
+                    "adminUsername": "[parameters('node-username')]",
+                    "adminPassword": "[parameters('node-password')]"
                 },
                 "storageProfile": {
                     "imageReference": {
@@ -421,7 +447,7 @@
                         "version": "latest"
                     },
                     "osDisk": {
-                        "name": "win-slaveOSDisk",
+                        "name": "node-2OSDisk",
                         "caching": "ReadWrite",
                         "createOption": "FromImage"
                     }
@@ -429,14 +455,14 @@
                 "networkProfile": {
                     "networkInterfaces": [
                         {
-                            "id": "[resourceId('Microsoft.Network/networkInterfaces', 'win-slave-NetworkInterface')]"
+                            "id": "[resourceId('Microsoft.Network/networkInterfaces', 'node-2-NetworkInterface')]"
                         }
                     ]
                 },
                 "diagnosticsProfile": {
                     "bootDiagnostics": {
                         "enabled": true,
-                        "storageUri": "[reference(resourceId('Microsoft.Storage/storageAccounts/', toLower(variables('storageName')))).primaryEndpoints.blob]"
+                        "storageUri": "[reference(resourceId('Microsoft.Storage/storageAccounts/', toLower(parameters('storageName')))).primaryEndpoints.blob]"
                     }
                 }
             }
@@ -459,7 +485,7 @@
                 "autoUpgradeMinorVersion": true,
                 "settings": {
                     "fileUris": [
-                        "./scripts/install-jenkins.sh'"
+                        "[concat('https://raw.githubusercontent.com/mahendra-shinde/jenkins-cluster-arm-template/master', '/scripts/install-jenkins.sh')]"
                     ]
                 },
                 "protectedSettings": {
@@ -468,7 +494,7 @@
             }
         },
         {
-            "name": "win-slave/customScript1",
+            "name": "node-2/customScript1",
             "type": "Microsoft.Compute/virtualMachines/extensions",
             "apiVersion": "2019-07-01",
             "location": "[resourceGroup().location]",
@@ -476,7 +502,7 @@
                 "displayName": "Jenkins slave for Windows VM"
             },
             "dependsOn": [
-                "[resourceId('Microsoft.Compute/virtualMachines', 'win-slave')]"
+                "[resourceId('Microsoft.Compute/virtualMachines', 'node-2')]"
             ],
             "properties": {
                 "publisher": "Microsoft.Compute",
@@ -485,11 +511,37 @@
                 "autoUpgradeMinorVersion": true,
                 "settings": {
                     "fileUris": [
-                        "./scripts/win-slave.ps1"
+                        "[concat('https://raw.githubusercontent.com/mahendra-shinde/jenkins-cluster-arm-template/master', '/scripts/node-2.ps1')]"
                     ]
                 },
                 "protectedSettings": {
-                    "commandToExecute": "powershell -ExecutionPolicy Bypass -file win-slave.ps1"
+                    "commandToExecute": "powershell -ExecutionPolicy Bypass -file node-2.ps1"
+                }
+            }
+        },
+        {
+            "name": "node-1/installSlave",
+            "type": "Microsoft.Compute/virtualMachines/extensions",
+            "apiVersion": "2019-07-01",
+            "location": "[resourceGroup().location]",
+            "tags": {
+                "displayName": "Jenkins slave for Linux VM"
+            },
+            "dependsOn": [
+                "[resourceId('Microsoft.Compute/virtualMachines', 'node-1')]"
+            ],
+            "properties": {
+                "publisher": "Microsoft.Azure.Extensions",
+                "type": "CustomScript",
+                "typeHandlerVersion": "2.1",
+                "autoUpgradeMinorVersion": true,
+                "settings": {
+                    "fileUris": [
+                        "[concat('https://raw.githubusercontent.com/mahendra-shinde/jenkins-cluster-arm-template/master', '/scripts/install-slave.sh')]"
+                    ]
+                },
+                "protectedSettings": {
+                    "commandToExecute": "sh install-slave.sh"
                 }
             }
         }
