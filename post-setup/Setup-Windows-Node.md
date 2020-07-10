@@ -54,3 +54,21 @@
     echo "Hello World"
     echo "Building %BUILD_ID% for JOB %JOB_NAME%"
     ```
+10. Configure the tools
+
+    Visit Node Configuration page for node-2 using URL similar to
+    http://JENKINS-MASTER-IP:8080/computer/node-2/configure
+
+11. Check option "Tool Locations"
+    ```
+    Name: Git
+    HOME: C:\Program Files\Git\bin\git.exe
+
+    Name: JAVA8
+    HOME: C:\Program Files\Java\jdk1.8.0_211
+
+    Name: M2
+    HOME:  C:\ProgramData\chocolatey\lib\maven\apache-maven-3.6.3\bin
+    ```
+
+12. Click "Save" Button
