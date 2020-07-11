@@ -152,12 +152,16 @@
             "location": "[resourceGroup().location]",
             "dependsOn": [
                 "[resourceId('Microsoft.Network/publicIPAddresses', 'Master-PublicIP')]",
-                "[resourceId('Microsoft.Network/virtualNetworks', 'jenkins-cluster-VirtualNetwork')]"
+                "[resourceId('Microsoft.Network/virtualNetworks', 'jenkins-cluster-VirtualNetwork')]",
+                "[resourceId('Microsoft.Network/networkSecurityGroups','master-nsg')]"
             ],
             "tags": {
                 "displayName": "Jenkins-Master-NetworkInterface"
             },
             "properties": {
+                 "networkSecurityGroup": {
+                    "id": "[resourceId('Microsoft.Network/networkSecurityGroups','master-nsg')]"
+                } ,
                 "ipConfigurations": [
                     {
                         "name": "ipConfig1",
@@ -269,7 +273,8 @@
             "location": "[resourceGroup().location]",
             "dependsOn": [
                 "[resourceId('Microsoft.Network/publicIPAddresses', 'node-1-PublicIP')]",
-                "[resourceId('Microsoft.Network/virtualNetworks', 'jenkins-cluster-VirtualNetwork')]"
+                "[resourceId('Microsoft.Network/virtualNetworks', 'jenkins-cluster-VirtualNetwork')]",
+                "[resourceId('Microsoft.Network/networkSecurityGroups','node-1-nsg')]"
             ],
             "tags": {
                 "displayName": "node-1-NetworkInterface"
@@ -389,7 +394,8 @@
             "location": "[resourceGroup().location]",
             "dependsOn": [
                 "[resourceId('Microsoft.Network/publicIPAddresses', 'node-2-PublicIP')]",
-                "[resourceId('Microsoft.Network/virtualNetworks', 'jenkins-cluster-VirtualNetwork')]"
+                "[resourceId('Microsoft.Network/virtualNetworks', 'jenkins-cluster-VirtualNetwork')]",
+                "[resourceId('Microsoft.Network/networkSecurityGroups','node-2-nsg')]"
             ],
             "tags": {
                 "displayName": "node-2 Network Interface"
@@ -429,7 +435,7 @@
             },
             "properties": {
                 "hardwareProfile": {
-                    "vmSize": "Standard_A2_v2"
+                    "vmSize": "Standard_D2s_v3"
                 },
                 "osProfile": {
                     "computerName": "node-2",
@@ -440,7 +446,7 @@
                     "imageReference": {
                         "publisher": "MicrosoftWindowsServer",
                         "offer": "WindowsServer",
-                        "sku": "2019-Datacenter",
+                        "sku": "2019-Datacenter-with-Containers",
                         "version": "latest"
                     },
                     "osDisk": {
@@ -543,5 +549,12 @@
             }
         }
     ],
-    "outputs": {}
+    
+    "outputs": {
+        "master-public-ip": {
+            "type": "string",
+            "value": "[resourceId('Microsoft.Network/publicIPAddresses','Master-PublicIP')]"
+        }
+        
+    }
 }

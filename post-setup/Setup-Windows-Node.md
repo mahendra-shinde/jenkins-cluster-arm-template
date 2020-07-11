@@ -68,7 +68,7 @@
     HOME: C:\Program Files\Java\jdk1.8.0_211
 
     Name: M2
-    HOME:  C:\ProgramData\chocolatey\lib\maven\apache-maven-3.6.3\bin
+    HOME:  C:\ProgramData\chocolatey\lib\maven\apache-maven-3.6.3\
     ```
 
 12. Click "Save" Button
