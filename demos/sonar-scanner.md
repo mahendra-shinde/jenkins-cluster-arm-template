@@ -2,9 +2,16 @@
 
 1. Sign Up using GitHub account or BitBucket account
 
-2. Use the right corner button "+" to create a new organisation 
+2. Use the right corner button "+" to create a new organisation & new project
     
     I have create "KEY101" (Organisation keys are globally unique)
+
+    Project Creation URL https://sonarcloud.io/projects/create
+    
+    Select Organization Key from the first drop down >
+    Enter Unique Project Key > Click Setup
+
+    I have a project under "KEY101" called "PROJ101"
 
 3.  Use the right corner button and goto "Account Settings"
 
