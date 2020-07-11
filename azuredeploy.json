@@ -139,10 +139,7 @@
                     {
                         "name": "Jenkins-VirtualNetwork-Subnet",
                         "properties": {
-                            "addressPrefix": "[variables('SubnetRange')]",
-                            "networkSecurityGroup": {
-                                "id": "[resourceId('Microsoft.Network/networkSecurityGroups', 'master-nsg')]"
-                            }
+                            "addressPrefix": "[variables('SubnetRange')]"
                         }
                     }
                 ]
@@ -511,11 +508,11 @@
                 "autoUpgradeMinorVersion": true,
                 "settings": {
                     "fileUris": [
-                        "[concat('https://raw.githubusercontent.com/mahendra-shinde/jenkins-cluster-arm-template/master', '/scripts/node-2.ps1')]"
+                        "[concat('https://raw.githubusercontent.com/mahendra-shinde/jenkins-cluster-arm-template/master', '/scripts/win-slave.ps1')]"
                     ]
                 },
                 "protectedSettings": {
-                    "commandToExecute": "powershell -ExecutionPolicy Bypass -file node-2.ps1"
+                    "commandToExecute": "powershell -ExecutionPolicy Bypass -file win-slave.ps1"
                 }
             }
         },
